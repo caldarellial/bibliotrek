@@ -2,8 +2,11 @@ import { defaultConfig } from "@tamagui/config/v5";
 import { createAnimations } from "@tamagui/animations-react-native";
 import { createTamagui } from "tamagui";
 
+import { themes } from "./themes";
+
 export const config = createTamagui({
   ...defaultConfig,
+  themes,
   animations: createAnimations({
     bouncy: {
       damping: 10,
