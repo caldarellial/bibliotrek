@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
 import { View, Image, Square } from "tamagui";
 
-export const IntroScreen = () => {
+SplashScreen.preventAutoHideAsync();
+
+export const IntroScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [startIntro, setStartIntro] = useState(false);
 
   const imgSrc = useMemo(
     () =>
       startIntro
-        ? require("../../../../assets/images/bag-opened.jpg")
+        ? require("../../../../assets/images/bag-opened.png")
         : require("../../../../assets/splash-icon.png"),
     [startIntro],
   );
@@ -15,6 +18,11 @@ export const IntroScreen = () => {
   useEffect(() => {
     setTimeout(() => {
       setStartIntro(true);
+      SplashScreen.hideAsync();
+
+      setTimeout(() => {
+        onComplete();
+      }, 2000);
     }, 1000);
   }, []);
 
@@ -26,6 +34,7 @@ export const IntroScreen = () => {
       justifyContent="center"
       height="100%"
       width="100%"
+      backgroundColor="#22415E"
     >
       <Square
         backgroundColor="white"
