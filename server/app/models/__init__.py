@@ -1,21 +1,27 @@
 from uuid import UUID, uuid4
-from datetime import datetime
-from typing import List, Optional
-from sqlmodel import Field, SQLModel, delete, select, Column, TIMESTAMP, func, Relationship, text
+from datetime import datetime, timezone
+from typing import Any, List, Optional, cast
+from pydantic import BaseModel
+from sqlalchemy import DateTime
+from sqlmodel import Field, SQLModel, delete, select, func, Relationship, text, UniqueConstraint
 
 from app.database import SessionDep
 
 class BaseTable(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
+    _ts = cast(Any, DateTime(timezone=True))
     created_at: datetime = Field(
-        sa_type=TIMESTAMP(timezone=True),
-        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
-        nullable=False
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=_ts,
+        sa_column_kwargs={
+            "server_default": text("CURRENT_TIMESTAMP"),
+            "nullable": False,
+        },
     )
     updated_at: Optional[datetime] = Field(
         default=None,
-        sa_type=TIMESTAMP(timezone=True),
-        sa_column_kwargs={"onupdate": func.now(), "nullable": True}
+        sa_type=_ts,
+        sa_column_kwargs={"onupdate": func.now(), "nullable": True},
     )
        
 
@@ -29,15 +35,17 @@ class Book(BaseTable, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     book_id: str
     title: str
-    author_id: UUID = Field(foreign_key="author.id")
-    author: "Author" = Relationship(back_populates="books")
+    subtitle: Optional[str] = None
+    isbn_10: Optional[str] = None
+    isbn_13: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    authors: List["BookAuthorLink"] = Relationship(back_populates="book")
     collected_by_users: List["UserBookLink"] = Relationship(back_populates="book")
 
 class Author(BaseTable, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    first_name: str
-    last_name: str
-    books: List["Book"] = Relationship(back_populates="author")
+    name: str
+    books: List["BookAuthorLink"] = Relationship(back_populates="author")
 
 class UserBookLink(BaseTable, table=True):    
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -46,5 +54,12 @@ class UserBookLink(BaseTable, table=True):
     user: User = Relationship(back_populates="collected_books")
     book: Book = Relationship(back_populates="collected_by_users")
 
-__all__ = ["User", "SessionDep", "select", "delete", "UserBookLink", "Book", "Author"]
+class BookAuthorLink(BaseTable, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    book_id: UUID = Field(foreign_key="book.id")
+    author_id: UUID = Field(foreign_key="author.id")
+    book: Book = Relationship(back_populates="authors")
+    author: Author = Relationship(back_populates="books")
+
+__all__ = ["User", "SessionDep", "select", "delete", "UserBookLink", "Book", "Author", "BookAuthorLink"]
     

@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     sqlite_path: str = "database.db"
 
     auth_secret_key: Optional[str] = None
+    google_discovery_api_key: Optional[str] = None
+
+    # Dev-only: drop all mapped tables before create_all (see app.database._reset_schema).
+    reset_database_on_startup: bool = False
 
     @property
     def sqlalchemy_database_url(self) -> str:

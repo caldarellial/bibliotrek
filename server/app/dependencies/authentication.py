@@ -16,8 +16,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 password_hash = PasswordHash.recommended()
 
-SECRET_KEY = _settings.auth_secret_key
-if not SECRET_KEY:
+SECRET_KEY = _settings.auth_secret_key or ""
+if not _settings.auth_secret_key:
   raise ValueError("AUTH_SECRET_KEY is not set")
 
 ALGORITHM = "HS256"
@@ -55,7 +55,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
         if id is None:
             raise credentials_exception
         token_data = TokenData(id=id)
-    except InvalidTokenError:
+    except InvalidTokenError as e:
         raise credentials_exception
     user = session.exec(select(User).where(User.id == token_data.id)).first()
     if user is None:
