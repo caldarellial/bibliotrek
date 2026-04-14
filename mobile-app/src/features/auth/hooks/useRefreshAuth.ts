@@ -4,18 +4,17 @@ import { useShallow } from "zustand/react/shallow";
 import { api } from "features/core";
 import { useAuthStore } from "./useAuthStore";
 
-export type LoginResponse = {
+export type RefreshAuthResponse = {
   access_token: string;
   token_type: string;
   refresh_token: string;
 };
 
-export type LoginRequest = {
-  username: string;
-  password: string;
+export type RefreshAuthRequest = {
+  refresh_token: string;
 };
 
-export const useLogin = () => {
+export const useRefreshAuth = () => {
   const { setAccessToken, setTokenType, setRefreshToken } = useAuthStore(
     useShallow((state) => ({
       setAccessToken: state.setAccessToken,
@@ -26,11 +25,10 @@ export const useLogin = () => {
 
   return useMutation({
     mutationKey: ["login"],
-    mutationFn: ({ username, password }: LoginRequest) =>
+    mutationFn: ({ refresh_token }: RefreshAuthRequest) =>
       api
-        .post<LoginResponse>("/token", {
-          username,
-          password,
+        .post<RefreshAuthResponse>("/refresh-token", {
+          refresh_token,
         })
         .then((res) => res.data),
     onSuccess: (data) => {

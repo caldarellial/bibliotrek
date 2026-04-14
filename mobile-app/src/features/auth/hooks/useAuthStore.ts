@@ -7,6 +7,8 @@ export type AuthStore = {
   clearAccessToken: () => void;
   tokenType: string | null;
   setTokenType: (tokenType: string) => void;
+  refreshToken: string | null;
+  setRefreshToken: (refreshToken: string) => void;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -23,5 +25,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setTokenType: (tokenType: string) => {
     SecureStore.setItem("token_type", tokenType);
     set({ tokenType });
+  },
+  refreshToken: null,
+  setRefreshToken: (refreshToken: string) => {
+    SecureStore.setItem("refresh_token", refreshToken);
+    set({ refreshToken });
   },
 }));

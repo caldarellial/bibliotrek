@@ -33,11 +33,22 @@ class Token(BaseModel):
   access_token: str
   token_type: str
 
+class RefreshToken(BaseModel):
+  refresh_token: str
+
 class TokenData(BaseModel):
   id: UUID
 
 def create_access_token(data: dict, expires_delta: timedelta) -> str:
   to_encode = data.copy()
+  expire = datetime.now(timezone.utc) + expires_delta
+  to_encode.update({"exp": expire})
+  encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+  return encoded_jwt
+
+def create_refresh_token(data: dict, expires_delta: timedelta) -> str:
+  to_encode = data.copy()
+  to_encode.update({"is_refresh": True})
   expire = datetime.now(timezone.utc) + expires_delta
   to_encode.update({"exp": expire})
   encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -54,6 +65,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
         id = payload.get("sub")
         if id is None:
             raise credentials_exception
+        if payload.get("is_refresh"):
+            raise credentials_exception
         token_data = TokenData(id=id)
     except InvalidTokenError as e:
         raise credentials_exception
@@ -61,3 +74,26 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
     if user is None:
         raise credentials_exception
     return user
+
+def verify_refresh_token(refresh_token: str) -> bool:
+  try:
+    payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+    if payload.get("is_refresh"):
+      return True
+    else:
+      return False
+  except InvalidTokenError:
+    return False
+
+def get_user_from_refresh_token(refresh_token: str, session: SessionDep) -> User:
+  try:
+    payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+    user_id = payload.get("sub")
+    if user_id is None:
+      raise HTTPException(status_code=401, detail="Invalid refresh token")
+    user = session.exec(select(User).where(User.id == user_id)).first()
+    if user is None:
+      raise HTTPException(status_code=401, detail="Invalid refresh token")
+    return user
+  except InvalidTokenError:
+    raise HTTPException(status_code=401, detail="Invalid refresh token")
